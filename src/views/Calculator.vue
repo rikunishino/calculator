@@ -1,79 +1,147 @@
 <template>
-  <div>
-    <input class="calcResult" type="text" v-model="result" />
-
-    <table class="keypadTable">
-      <tr>
-        <td><button v-on:click="setResultArea('7')">７</button></td>
-        <td><button v-on:click="setResultArea('8')">８</button></td>
-        <td><button v-on:click="setResultArea('9')">９</button></td>
-        <td><button v-on:click="setOperator('/')">➗</button></td>
-      </tr>
-      <tr>
-        <td><button v-on:click="setResultArea('4')">４</button></td>
-        <td><button v-on:click="setResultArea('5')">５</button></td>
-        <td><button v-on:click="setResultArea('6')">６</button></td>
-        <td><button v-on:click="setOperator('*')">✖️</button></td>
-      </tr>
-      <tr>
-        <td><button v-on:click="setResultArea('1')">１</button></td>
-        <td><button v-on:click="setResultArea('2')">２</button></td>
-        <td><button v-on:click="setResultArea('3')">３</button></td>
-        <td><button v-on:click="setOperator('-')">➖</button></td>
-      </tr>
-      <tr>
-        <td><button v-on:click="setResultArea('0')">０</button></td>
-        <td><button v-on:click="setResultArea('.')">．</button></td>
-        <td><button v-on:click="calc()">＝</button></td>
-        <td><button v-on:click="setOperator('+')">➕</button></td>
-      </tr>
-    </table>
-    <button v-on:click="clear()">C</button>
-    <br>
-    <button v-on:click="debugAreaClear()">Debug</button>
-    <input type="text" v-model="debugArea" />
-  </div>
+    <div id='calculator'>
+        <input class="calcResult" type="text" v-model="result" />
+        <table class="keypadTable">
+            <tr>
+                <td><button @click="inputNumber('7')">７</button></td>
+                <td><button @click="inputNumber('8')">８</button></td>
+                <td><button @click="inputNumber('9')">９</button></td>
+                <td><button @click="calc('/')">➗</button></td>
+            </tr>
+            <tr>
+                <td><button @click="inputNumber('4')">４</button></td>
+                <td><button @click="inputNumber('5')">５</button></td>
+                <td><button @click="inputNumber('6')">６</button></td>
+                <td><button @click="calc('*')">✖️</button></td>
+            </tr>
+            <tr>
+                <td><button @click="inputNumber('1')">１</button></td>
+                <td><button @click="inputNumber('2')">２</button></td>
+                <td><button @click="inputNumber('3')">３</button></td>
+                <td><button @click="calc('-')">➖</button></td>
+            </tr>
+            <tr>
+                <td><button @click="inputNumber('0')">０</button></td>
+                <td><button @click="inputNumber('.')">．</button></td>
+                <td><button @click="calc('=')">＝</button></td>
+                <td><button @click="calc('+')">➕</button></td>
+            </tr>
+            <tr>
+                <td><button @click="clear()">C</button></td>
+                <td><button @click="allClear()">AC</button></td>
+            </tr>
+        </table>
+    </div>
 </template>
 
 <script>
+  var beforeOperator = false; // 結果表示エリアのクリアフラグ
+  var result = '0'; // 計算結果
+  var operator = ''; // 予約された演算子
+  var num = 0; // 一時保存
+
   export default {
     data() {
       return {
         result: '0',
-        debugArea: ''
       }
     },
     methods: {
-      // 結果表示エリアをクリア
-      clear: function() {
-        this.result = '0'
-      },
-      // デバッグエリアをクリア
-      debugAreaClear: function() {
-        this.debugArea = ''
-      },
-      // 結果表示エリアに入力中の数値を表示
-      setResultArea: function(input) {
+      /**
+       * 結果表示エリアに入力中の数値を表示
+       *
+       * @param {*} input
+       */
+      inputNumber: function(input) {
+        // 演算子入力直後
+        if(beforeOperator) {
+          this.result = '';
+          beforeOperator = false
+        }
+
         // 0の時は末尾に追加ではなく置き換え
-        if(this.result != 0) {
+        if(this.result !== '0') {
           this.result = this.result + input
         } else {
           this.result = input
         }
-        // TODO: 「.」の入力制限
 
-        // TODO: 演算子を入力後は結果表示エリアをリセット
       },
-      // TODO: 選択した演算子をセット
-      setOperator: function(input) {
-        this.debugArea = input
+      /**
+       * 計算処理
+       *
+       * @param {*} input
+       */
+      calc: function(input) {
+        // 入力チェック
+        this.inputCheck(this.result)
+
+        // 値の一時保存
+        if(input !== num) {
+          num = this.result
+        }
+
+        // 計算処理
+        switch(operator) {
+          case '+':
+            result = parseFloat(result) + parseFloat(num)
+            break
+          case '-':
+            result = parseFloat(result) - parseFloat(num)
+            break
+          case '*':
+            result = parseFloat(result) * parseFloat(num)
+            break
+          case '/':
+            result = parseFloat(result) / parseFloat(num)
+            break
+        }
+
+        if(operator === '') {
+          // 値の一時保存
+          result = this.result
+        } else {
+          // 計算結果の表示
+          this.result = result
+        }
+
+        // 次回計算時に使用する演算子として保存
+        if(input !== '=') {
+          operator = input
+        }
+
+        beforeOperator = true
       },
-      // TODO: 計算処理
-      calc: function() {
-        console.log('計算中...');
+      /**
+       * 入力値チェック
+       *
+       * @param {*} input
+       */
+      inputCheck: function(input) {
+        // 数値および書式に合った「-」、「.」を含む値を許容
+        if(!String(input).match('^[-]?[0-9]*[.]?[0-9]*$')) {
+          console.log(input + 'is bad value') // デバッグ用
+          this.result = '0'
+        }
+      },
+      /**
+       * 結果表示エリアをクリア
+       */
+      clear: function() {
+        this.result = '0'
+      },
+      /**
+       * 結果表示エリアおよび保存している値、演算子のクリア
+       */
+      allClear: function() {
+        this.result = '0'
+        beforeOperator = false;
+        operator = '';
+        num = 0;
       }
     }
   }
+
 </script>
 
 <style>
